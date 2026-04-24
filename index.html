@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Gestão - ElevoTech</title>
+    <style>
+        :root { --primary: #1a73e8; --success: #1e8e3e; --secondary: #5f6368; }
+        body { font-family: 'Segoe UI', sans-serif; background: #f1f3f4; margin: 0; padding: 15px; }
+        .container { max-width: 550px; margin: auto; }
+        .tabs { display: flex; background: #fff; border-radius: 8px; margin-bottom: 10px; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .tab-btn { flex: 1; padding: 15px; border: none; background: none; cursor: pointer; font-weight: bold; color: var(--secondary); }
+        .tab-btn.active { color: var(--primary); border-bottom: 3px solid var(--primary); background: #f8f9fa; }
+        .card { background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin-bottom: 15px; }
+        
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .full-width { grid-column: span 2; }
+        
+        label { display: block; font-size: 12px; font-weight: bold; margin-bottom: 2px; color: var(--secondary); }
+        input, select { width: 100%; padding: 10px; margin-bottom: 10px; border: 1px solid #dadce0; border-radius: 6px; box-sizing: border-box; }
+        
+        .search-box { width: 100%; padding: 12px; border: 2px solid var(--primary); border-radius: 8px; margin-bottom: 15px; font-size: 16px; outline: none; }
+        
+        .btn { width: 100%; padding: 15px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
+        .btn-save { background: var(--primary); color: white; margin-top: 10px; }
+        
+        .lista-item { display: flex; align-items: center; padding: 12px; border-bottom: 1px solid #eee; cursor: pointer; transition: 0.2s; }
+        .lista-item:hover { background: #f8f9fa; }
+        .lista-item img { width: 50px; height: 50px; border-radius: 8px; object-fit: cover; margin-right: 15px; background: #eee; }
+        
+        #modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #fff; z-index: 100; padding: 20px; box-sizing: border-box; overflow-y: auto; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="tabs">
+        <button class="tab-btn active" id="tabCad" onclick="showTab('cadastro')">NOVO</button>
+        <button class="tab-btn" id="tabLis" onclick="showTab('lista')">LISTA</button>
+        <button class="tab-btn" id="tabBak" onclick="showTab('backup')">BACKUP</button>
+    </div>
+
+    <div id="tela-cadastro" class="card">
+        <form id="formGeral">
+            <label>Criança:</label><input type="text" id="crianca" class="full-width" required>
+            
+            <div class="form-grid">
+                <div><label>Nascimento:</label><input type="date" id="nascimento"></div>
+                <div><label>RG:</label><input type="text" id="rg"></div>
+                <div><label>Sexo:</label>
+                    <select id="sexo">
+                        <option value="Masculino">Masculino</option>
+                        <option value="Feminino">Feminino</option>
+                    </select>
+                </div>
+                <div><label>Roupa:</label><input type="text" id="roupa" placeholder="Ex: Gg"></div>
+                <div><label>Calçado:</label><input type="number" id="calcado" placeholder="40"></div>
+                <div><label>Telefone:</label><input type="tel" id="telefone"></div>
+            </div>
+
+            <label>Responsável:</label><input type="text" id="responsavel">
+            <label>Endereço:</label><input type="text" id="endereco">
+            <label>Bairro:</label><input type="text" id="bairro">
+            
+            <label>Foto:</label><input type="file" id="foto" accept="image/*" capture="environment">
+            <button type="button" class="btn btn-save" onclick="salvar()">GRAVAR NO SISTEMA</button>
+        </form>
+    </div>
+
+    <div id="tela-lista" style="display:none;">
+        <input type="text" id="inputBusca" class="search-box" placeholder="Filtrar por nome, RG ou bairro..." onkeyup="filtrarLista()">
+        <div id="lista-db" class="card"></div>
+    </div>
+
+    <div id="tela-backup" class="card" style="display:none; text-align:center;">
+        <h3>Centralizar Dados</h3>
+        <button class="btn btn-save" style="background:#fff; color:var(--primary); border:1px solid var(--primary);" onclick="exportarBackup()">GERAR ARQUIVO DE BACKUP</button>
+        <br><br>
+        <input type="file" id="importFile" accept=".json" style="display:none" onchange="importarBackup(this)">
+        <button class="btn btn-save" onclick="document.getElementById('importFile').click()">IMPORTAR PARA ESTE COMPUTADOR</button>
+    </div>
+</div>
+
+<div id="modal">
+    <button class="btn" style="background:#e8f0fe; color:var(--primary); margin-bottom:20px;" onclick="document.getElementById('modal').style.display='none'">← VOLTAR</button>
+    <div id="detalhe-conteudo" style="text-align: center;">
+        <img id="det-img" style="max-width: 100%; border-radius: 12px; margin-bottom:20px;">
+        <h2 id="det-nome"></h2>
+        <div id="det-texto" style="text-align: left; background: #f8f9fa; padding: 15px; border-radius: 8px; line-height: 1.6;"></div>
+    </div>
+</div>
+
+<script>
+    let db;
+    let todosCadastros = []; // Array para busca rápida
+
+    const request = indexedDB.open("ComunidadeDB_V2", 1);
+    request.onupgradeneeded = (e) => {
+        e.target.result.createObjectStore("pessoas", { keyPath: "id", autoIncrement: true });
+    };
+    request.onsuccess = (e) => { db = e.target.result; renderLista(); };
+
+    function showTab(aba) {
+        ['tela-cadastro', 'tela-lista', 'tela-backup'].forEach(t => document.getElementById(t).style.display = 'none');
+        ['tabCad', 'tabLis', 'tabBak'].forEach(t => document.getElementById(t).classList.remove('active'));
+        document.getElementById('tela-' + aba).style.display = 'block';
+        document.getElementById('tab' + aba.charAt(0).toUpperCase() + aba.slice(1,3)).classList.add('active');
+        if(aba === 'lista') renderLista();
+    }
+
+    async function salvar() {
+        const foto = document.getElementById('foto').files[0];
+        const registro = {
+            crianca: document.getElementById('crianca').value,
+            nascimento: document.getElementById('nascimento').value,
+            rg: document.getElementById('rg').value,
+            sexo: document.getElementById('sexo').value,
+            roupa: document.getElementById('roupa').value,
+            calcado: document.getElementById('calcado').value,
+            responsavel: document.getElementById('responsavel').value,
+            telefone: document.getElementById('telefone').value,
+            endereco: document.getElementById('endereco').value,
+            bairro: document.getElementById('bairro').value,
+            foto: foto ? await toBase64(foto) : "",
+            dataCad: new Date().toLocaleString()
+        };
+
+        const tx = db.transaction("pessoas", "readwrite");
+        tx.objectStore("pessoas").add(registro);
+        tx.oncomplete = () => {
+            alert("Cadastrado permanentemente!");
+            document.getElementById('formGeral').reset();
+            showTab('lista');
+        };
+    }
+
+    const toBase64 = f => new Promise(r => {
+        const rd = new FileReader(); rd.onload = () => r(rd.result); rd.readAsDataURL(f);
+    });
+
+    function renderLista() {
+        const cont = document.getElementById('lista-db');
+        const store = db.transaction("pessoas").objectStore("pessoas");
+        store.getAll().onsuccess = (e) => {
+            todosCadastros = e.target.result;
+            displayCadastros(todosCadastros);
+        };
+    }
+
+    function displayCadastros(itens) {
+        const cont = document.getElementById('lista-db');
+        cont.innerHTML = "";
+        itens.forEach(d => {
+            const div = document.createElement('div');
+            div.className = 'lista-item';
+            div.onclick = () => abrir(d);
+            div.innerHTML = `<img src="${d.foto || 'https://via.placeholder.com/50'}">
+                <div><b>${d.crianca}</b><br><small>${d.bairro || 'Sem Bairro'} | RG: ${d.rg}</small></div>`;
+            cont.appendChild(div);
+        });
+    }
+
+    function filtrarLista() {
+        const termo = document.getElementById('inputBusca').value.toLowerCase();
+        const filtrados = todosCadastros.filter(p => 
+            p.crianca.toLowerCase().includes(termo) || 
+            p.rg.includes(termo) || 
+            p.bairro.toLowerCase().includes(termo)
+        );
+        displayCadastros(filtrados);
+    }
+
+    function abrir(d) {
+        document.getElementById('modal').style.display = 'block';
+        document.getElementById('det-img').src = d.foto;
+        document.getElementById('det-nome').innerText = d.crianca;
+        document.getElementById('det-texto').innerHTML = `
+            <b>RG:</b> ${d.rg} | <b>Sexo:</b> ${d.sexo}<br>
+            <b>Nascimento:</b> ${d.nascimento}<br>
+            <b>Roupa:</b> ${d.roupa} | <b>Calçado:</b> ${d.calcado}<br>
+            <b>Responsável:</b> ${d.responsavel}<br>
+            <b>Telefone:</b> ${d.telefone}<br>
+            <b>Endereço:</b> ${d.endereco}<br>
+            <b>Bairro:</b> ${d.bairro}
+        `;
+    }
+
+    function exportarBackup() {
+        db.transaction("pessoas").objectStore("pessoas").getAll().onsuccess = (e) => {
+            const blob = new Blob([JSON.stringify(e.target.result)], {type: "application/json"});
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = `backup_comunidade_${new Date().getTime()}.json`;
+            a.click();
+        };
+    }
+
+    function importarBackup(input) {
+        const reader = new FileReader();
+        reader.onload = () => {
+            const dados = JSON.parse(reader.result);
+            const tx = db.transaction("pessoas", "readwrite");
+            const store = tx.objectStore("pessoas");
+            dados.forEach(i => { delete i.id; store.add(i); });
+            tx.oncomplete = () => { alert("Importado!"); renderLista(); showTab('lista'); };
+        };
+        reader.readAsText(input.files[0]);
+    }
+</script>
+</body>
+</html>
