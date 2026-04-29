@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sistema de Gestão - ElevoTech</title>
     <style>
-        :root { --primary: #1a73e8; --success: #1e8e3e; --secondary: #5f6368; }
+        :root { --primary: #1a73e8; --success: #1e8e3e; --secondary: #5f6368; --danger: #d93025; }
         body { font-family: 'Segoe UI', sans-serif; background: #f1f3f4; margin: 0; padding: 15px; }
         .container { max-width: 550px; margin: auto; }
         .tabs { display: flex; background: #fff; border-radius: 8px; margin-bottom: 10px; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
@@ -23,6 +23,8 @@
         
         .btn { width: 100%; padding: 15px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
         .btn-save { background: var(--primary); color: white; margin-top: 10px; }
+        .btn-edit { background: var(--success); color: white; margin-top: 10px; display: none; }
+        .btn-delete { background: var(--danger); color: white; margin-top: 10px; display: none; }
         
         .lista-item { display: flex; align-items: center; padding: 12px; border-bottom: 1px solid #eee; cursor: pointer; transition: 0.2s; }
         .lista-item:hover { background: #f8f9fa; }
@@ -42,6 +44,7 @@
 
     <div id="tela-cadastro" class="card">
         <form id="formGeral">
+            <input type="hidden" id="edit-id">
             <label>Criança:</label><input type="text" id="crianca" class="full-width" required>
             
             <div class="form-grid">
@@ -63,7 +66,10 @@
             <label>Bairro:</label><input type="text" id="bairro">
             
             <label>Foto:</label><input type="file" id="foto" accept="image/*" capture="environment">
-            <button type="button" class="btn btn-save" onclick="salvar()">GRAVAR NO SISTEMA</button>
+            
+            <button type="button" id="btn-gravar" class="btn btn-save" onclick="salvar()">GRAVAR NO SISTEMA</button>
+            <button type="button" id="btn-alterar" class="btn btn-edit" onclick="alterar()">ALTERAR CADASTRO</button>
+            <button type="button" id="btn-excluir" class="btn btn-delete" onclick="excluir()">EXCLUIR CADASTRO</button>
         </form>
     </div>
 
@@ -87,24 +93,46 @@
         <img id="det-img" style="max-width: 100%; border-radius: 12px; margin-bottom:20px;">
         <h2 id="det-nome"></h2>
         <div id="det-texto" style="text-align: left; background: #f8f9fa; padding: 15px; border-radius: 8px; line-height: 1.6;"></div>
+        <button class="btn btn-save" style="margin-top:20px;" onclick="prepararEdicaoNoModal()">EDITAR ESTE CADASTRO</button>
     </div>
 </div>
 
 <script>
     let db;
-    let todosCadastros = []; // Array para busca rápida
+    let todosCadastros = []; 
+    let cadastroAtual;
 
     const request = indexedDB.open("ComunidadeDB_V2", 1);
     request.onupgradeneeded = (e) => {
         e.target.result.createObjectStore("pessoas", { keyPath: "id", autoIncrement: true });
     };
-    request.onsuccess = (e) => { db = e.target.result; renderLista(); };
+    request.onsuccess = (e) => { 
+        db = e.target.result; 
+        renderLista(); 
+        configurarLimiteIdade();
+    };
+
+    function configurarLimiteIdade() {
+        const hoje = new Date();
+        const dataLimite = new Date(hoje.getFullYear() - 10, hoje.getMonth(), hoje.getDate());
+        const minDate = dataLimite.toISOString().split("T")[0];
+        document.getElementById('nascimento').setAttribute('min', minDate);
+    }
 
     function showTab(aba) {
         ['tela-cadastro', 'tela-lista', 'tela-backup'].forEach(t => document.getElementById(t).style.display = 'none');
         ['tabCad', 'tabLis', 'tabBak'].forEach(t => document.getElementById(t).classList.remove('active'));
         document.getElementById('tela-' + aba).style.display = 'block';
         document.getElementById('tab' + aba.charAt(0).toUpperCase() + aba.slice(1,3)).classList.add('active');
+        
+        if(aba === 'cadastro') {
+            document.getElementById('formGeral').reset();
+            document.getElementById('btn-gravar').style.display = 'block';
+            document.getElementById('btn-alterar').style.display = 'none';
+            document.getElementById('btn-excluir').style.display = 'none';
+            document.getElementById('edit-id').value = "";
+        }
+        
         if(aba === 'lista') renderLista();
     }
 
@@ -132,6 +160,51 @@
             document.getElementById('formGeral').reset();
             showTab('lista');
         };
+    }
+
+    async function alterar() {
+        const id = parseInt(document.getElementById('edit-id').value);
+        const fotoInput = document.getElementById('foto').files[0];
+        
+        const registro = {
+            id: id,
+            crianca: document.getElementById('crianca').value,
+            nascimento: document.getElementById('nascimento').value,
+            rg: document.getElementById('rg').value,
+            sexo: document.getElementById('sexo').value,
+            roupa: document.getElementById('roupa').value,
+            calcado: document.getElementById('calcado').value,
+            responsavel: document.getElementById('responsavel').value,
+            telefone: document.getElementById('telefone').value,
+            endereco: document.getElementById('endereco').value,
+            bairro: document.getElementById('bairro').value,
+            dataCad: new Date().toLocaleString()
+        };
+
+        if (fotoInput) {
+            registro.foto = await toBase64(fotoInput);
+        } else {
+            registro.foto = cadastroAtual.foto;
+        }
+
+        const tx = db.transaction("pessoas", "readwrite");
+        tx.objectStore("pessoas").put(registro);
+        tx.oncomplete = () => {
+            alert("Cadastro atualizado!");
+            showTab('lista');
+        };
+    }
+
+    function excluir() {
+        if(confirm("Tem certeza que deseja excluir este cadastro?")) {
+            const id = parseInt(document.getElementById('edit-id').value);
+            const tx = db.transaction("pessoas", "readwrite");
+            tx.objectStore("pessoas").delete(id);
+            tx.oncomplete = () => {
+                alert("Cadastro removido!");
+                showTab('lista');
+            };
+        }
     }
 
     const toBase64 = f => new Promise(r => {
@@ -171,8 +244,9 @@
     }
 
     function abrir(d) {
+        cadastroAtual = d;
         document.getElementById('modal').style.display = 'block';
-        document.getElementById('det-img').src = d.foto;
+        document.getElementById('det-img').src = d.foto || 'https://via.placeholder.com/150';
         document.getElementById('det-nome').innerText = d.crianca;
         document.getElementById('det-texto').innerHTML = `
             <b>RG:</b> ${d.rg} | <b>Sexo:</b> ${d.sexo}<br>
@@ -183,6 +257,28 @@
             <b>Endereço:</b> ${d.endereco}<br>
             <b>Bairro:</b> ${d.bairro}
         `;
+    }
+
+    function prepararEdicaoNoModal() {
+        const d = cadastroAtual;
+        showTab('cadastro');
+        document.getElementById('modal').style.display = 'none';
+        
+        document.getElementById('edit-id').value = d.id;
+        document.getElementById('crianca').value = d.crianca;
+        document.getElementById('nascimento').value = d.nascimento;
+        document.getElementById('rg').value = d.rg;
+        document.getElementById('sexo').value = d.sexo;
+        document.getElementById('roupa').value = d.roupa;
+        document.getElementById('calcado').value = d.calcado;
+        document.getElementById('responsavel').value = d.responsavel;
+        document.getElementById('telefone').value = d.telefone;
+        document.getElementById('endereco').value = d.endereco;
+        document.getElementById('bairro').value = d.bairro;
+
+        document.getElementById('btn-gravar').style.display = 'none';
+        document.getElementById('btn-alterar').style.display = 'block';
+        document.getElementById('btn-excluir').style.display = 'block';
     }
 
     function exportarBackup() {
