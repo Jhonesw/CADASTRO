@@ -58,36 +58,16 @@
                 </div>
                 <div><label>Roupa:</label><input type="text" id="roupa" placeholder="Ex: Gg"></div>
                 <div><label>Calçado:</label><input type="number" id="calcado" placeholder="40"></div>
-                <div><label>Telefone WhatsApp:</label><input type="tel" id="telefone" placeholder="Ex: 11999999999"></div>
+                <div><label>Telefone:</label><input type="tel" id="telefone"></div>
             </div>
 
             <label>Responsável:</label><input type="text" id="responsavel">
             <label>Endereço:</label><input type="text" id="endereco">
-            
-            <label>Bairro:</label>
-            <select id="bairro">
-                <option value="">Selecione o Bairro</option>
-                <option value="Sape de baixo">Sape de baixo</option>
-                <option value="Sape de cima e posto">Sape de cima e posto</option>
-                <option value="Mandioquinha">Mandioquinha</option>
-                <option value="Jd Boa Vista">Jd Boa Vista</option>
-                <option value="Jd São Domingos">Jd São Domingos</option>
-                <option value="Jd Jaqueline">Jd Jaqueline</option>
-                <option value="Jd Joao VIII /Apoador">Jd Joao VIII /Apoador</option>
-                <option value="Jd Guaraú">Jd Guaraú</option>
-                <option value="Jd Esther">Jd Esther</option>
-                <option value="Rua 8">Rua 8</option>
-                <option value="Sem Terra">Sem Terra</option>
-                <option value="Gelo">Gelo</option>
-                <option value="Piamonteses">Piamonteses</option>
-                <option value="Cohab">Cohab</option>
-                <option value="Ponta da praia">Ponta da praia</option>
-                <option value="Predinhos">Predinhos</option>
-            </select>
+            <label>Bairro:</label><input type="text" id="bairro">
             
             <label>Foto:</label><input type="file" id="foto" accept="image/*" capture="environment">
             
-            <button type="button" id="btn-gravar" class="btn btn-save" onclick="salvar()">GRAVAR E ENVIAR WHATSAPP</button>
+            <button type="button" id="btn-gravar" class="btn btn-save" onclick="salvar()">GRAVAR NO SISTEMA</button>
             <button type="button" id="btn-alterar" class="btn btn-edit" onclick="alterar()">ALTERAR CADASTRO</button>
             <button type="button" id="btn-excluir" class="btn btn-delete" onclick="excluir()">EXCLUIR CADASTRO</button>
         </form>
@@ -121,56 +101,6 @@
     let db;
     let todosCadastros = []; 
     let cadastroAtual;
-
-    // Mensagens personalizadas para os novos bairros
-    const mensagensBairro = {
-        "Sape de baixo": " Atravéz da lider *Karen* seu cadastro foi realizado com sucesso, para concluir entre no grupo de aviso da comunidade Sape de baixo clicando no link abaixo    https://chat.whatsapp.com/L1CTqTmkbTP9zcOblrHnsK?mode=gi_t  ",
-
-
-        "Sape de cima e posto": "Atravéz da lider *Giseli/karolany* seu cadastro foi realizado com sucesso, para concluir entre no grupo de aviso da comunidade Sape de cima e posto clicando no link abaixo   https://chat.whatsapp.com/KD0ed31vOgsKhiOHpK3C2v?mode=gi_t",
-        
-        
-        "Mandioquinha": "Atravéz da lider *Mika/Cida* seu cadastro foi realizado com sucesso, para concluir entre no grupo de aviso da comunidade Mandioquinha clicando no link abaixo        https://chat.whatsapp.com/G8oaXNzfjnt75dKjU5xuu4?mode=gi_t ",
-        
-        
-        "Jd Boa Vista": "Atravéz da lider *Jane* seu cadastro foi realizado com sucesso, para concluir entre no grupo de aviso da comunidade Jd Boa Vista clicando no link abaixo     https://chat.whatsapp.com/Kx0qTOd53R71ejZkuHJ76a?mode=gi_t    ",
-        
-        
-        "Jd São Domingos": "Atravéz da lider *Claudia Rayssa* seu cadastro foi realizado com sucesso, para concluir entre no grupo de aviso da comunidade Jd São Domingos clicando no link abaixo      https://chat.whatsapp.com/FmgU0IU5xhRAZKzSufj9cS?mode=gi_t   ",
-        
-        
-        "Jd Jaqueline": "Atravéz da lider *Priscila* seu cadastro foi realizado com sucesso, para concluir entre no grupo de aviso da comunidade Jd Jaqueline clicando no link abaixo       https://chat.whatsapp.com/BTo1YTKykbVEm49vNvAujX?mode=gi_t  ",
-        
-        
-        "Jd Joao VIII /Apoador": "Atravéz da lider *Michelle* seu cadastro foi realizado com sucesso, para concluir entre no grupo de aviso da comunidade Jd Joao VIII /Apoador clicando no link abaixo     https://chat.whatsapp.com/H9W68tyfgLd50WdrLD6hzl?mode=gi_t    ",
-        
-        
-        "Jd Guaraú": "Atravéz da lider *Dani* seu cadastro foi realizado com sucesso, para concluir entre no grupo de aviso da comunidade Jd Guaraú clicando no link abaixo     https://chat.whatsapp.com/GWKISYttbXE4b6HMBAcuUG?mode=gi_t    ",
-        
-        
-        "Jd Esther": "Atravéz da lider *Claudinha* seu cadastro foi realizado com sucesso, para concluir entre no grupo de aviso da comunidade Jd Esther clicando no link abaixo        https://chat.whatsapp.com/EbvJ19E7bPJ4TqEcLGqizM?mode=gi_t ",
-        
-        
-        "Rua 8": "Atravéz da lider *Jane* seu cadastro foi realizado com sucesso, para concluir entre no grupo de aviso da comunidade Rua 8 clicando no link abaixo        https://chat.whatsapp.com/GWqZCZLs4yS99yVosijJzq?mode=gi_t ",
-        
-        
-        "Sem Terra": "Atravéz da lider *Tia Bia * seu cadastro foi realizado com sucesso, para concluir entre no grupo de aviso da comunidade Sem Terra clicando no link abaixo         https://chat.whatsapp.com/HmASaxUGRDZCUY39YLKRlG?mode=gi_t",
-        
-        
-        "Gelo": "Atravéz da lider *Karine* seu cadastro foi realizado com sucesso, para concluir entre no grupo de aviso da comunidade Gelo clicando no link abaixo        https://chat.whatsapp.com/HWltI07ZT5wJbfJaG4m6Xn?mode=gi_t ",
-        
-        
-        "Piamonteses": "Atravéz da lider *kenia * seu cadastro foi realizado com sucesso, para concluir entre no grupo de aviso da comunidade Piamonteses clicando no link abaixo      https://chat.whatsapp.com/IFTgd739XnfA1xXlxObN6e?mode=gi_t   ",
-        
-        
-        "Cohab": "Atravéz da lider *Simone* seu cadastro foi realizado com sucesso, para concluir entre no grupo de aviso da comunidade Cohab clicando no link abaixo       https://chat.whatsapp.com/KcFdzw6o95y31640lkjIhQ?mode=gi_t  ",
-        
-        
-        "Ponta da praia": "Atravéz da lider *Giovana* seu cadastro foi realizado com sucesso, para concluir entre no grupo de aviso da comunidade Ponta da praia clicando no link abaixo       https://chat.whatsapp.com/CNu1hDkOWsEDY6LKbdalZd?mode=gi_t  ",
-        
-        
-        "Predinhos": "Atravéz da lider *Gilmara * seu cadastro foi realizado com sucesso, para concluir entre no grupo de aviso da comunidade Predinhos clicando no link abaixo       https://chat.whatsapp.com/FLybyxVnTN29CVUwr1RZEY?mode=gi_t  "
-    };
 
     const request = indexedDB.open("ComunidadeDB_V2", 1);
     request.onupgradeneeded = (e) => {
@@ -208,9 +138,6 @@
 
     async function salvar() {
         const foto = document.getElementById('foto').files[0];
-        const bairroSel = document.getElementById('bairro').value;
-        const msgBairro = mensagensBairro[bairroSel] || "Cadastro realizado com sucesso.";
-
         const registro = {
             crianca: document.getElementById('crianca').value,
             nascimento: document.getElementById('nascimento').value,
@@ -221,7 +148,7 @@
             responsavel: document.getElementById('responsavel').value,
             telefone: document.getElementById('telefone').value,
             endereco: document.getElementById('endereco').value,
-            bairro: bairroSel,
+            bairro: document.getElementById('bairro').value,
             foto: foto ? await toBase64(foto) : "",
             dataCad: new Date().toLocaleString()
         };
@@ -229,28 +156,10 @@
         const tx = db.transaction("pessoas", "readwrite");
         tx.objectStore("pessoas").add(registro);
         tx.oncomplete = () => {
-            enviarWhatsApp(registro, msgBairro);
-            alert("Cadastrado e Mensagem Enviada!");
+            alert("Cadastrado permanentemente!");
             document.getElementById('formGeral').reset();
             showTab('lista');
         };
-    }
-
-    function enviarWhatsApp(reg, msgBairro) {
-        const fone = reg.telefone.replace(/\D/g, '');
-        if(!fone) return;
-
-        const texto = `*OLÁ, SOMOS A TURMA DO BEM - EQUIPE NEIDE, PASSANDO PARA DIZER QUE SEU CADASTRO REALIZADO*%0A%0A` +
-                      `*Criança:* ${reg.crianca}%0A` +
-                      `*RG:* ${reg.rg}%0A` +
-                      `*Nascimento:* ${reg.nascimento}%0A` +
-                      `*Sexo:* ${reg.sexo}%0A` +
-                      `*Roupa:* ${reg.roupa} | *Sapato:* ${reg.calcado}%0A` +
-                      `*Responsável:* ${reg.responsavel}%0A` +
-                      `*Endereço:* ${reg.endereco}, ${reg.bairro}%0A%0A` +
-                      `*ENTRE NO GRUPO DE WHATSSAPP DA SUA COMUNIDADE:*%0A_${msgBairro}_`;
-
-        window.open(`https://wa.me/55${fone}?text=${texto}`, '_blank');
     }
 
     async function alterar() {
@@ -303,6 +212,7 @@
     });
 
     function renderLista() {
+        const cont = document.getElementById('lista-db');
         const store = db.transaction("pessoas").objectStore("pessoas");
         store.getAll().onsuccess = (e) => {
             todosCadastros = e.target.result;
