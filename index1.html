@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Gestão - ElevoTech</title>
+    <style>
+        :root { --primary: #1a73e8; --success: #1e8e3e; --secondary: #5f6368; --danger: #d93025; }
+        body { font-family: 'Segoe UI', sans-serif; background: #f1f3f4; margin: 0; padding: 15px; }
+        .container { max-width: 550px; margin: auto; }
+        .tabs { display: flex; background: #fff; border-radius: 8px; margin-bottom: 10px; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .tab-btn { flex: 1; padding: 15px; border: none; background: none; cursor: pointer; font-weight: bold; color: var(--secondary); }
+        .tab-btn.active { color: var(--primary); border-bottom: 3px solid var(--primary); background: #f8f9fa; }
+        .card { background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin-bottom: 15px; }
+        
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .full-width { grid-column: span 2; }
+        
+        label { display: block; font-size: 12px; font-weight: bold; margin-bottom: 2px; color: var(--secondary); }
+        input, select { width: 100%; padding: 10px; margin-bottom: 10px; border: 1px solid #dadce0; border-radius: 6px; box-sizing: border-box; }
+        
+        .zap-valido { border: 2px solid var(--success) !important; margin-bottom: 2px !important; }
+        .zap-invalido { border: 2px solid var(--danger) !important; margin-bottom: 2px !important; }
+        .zap-feedback { font-size: 10px; font-weight: bold; margin-bottom: 10px; display: none; }
+
+        .search-box { width: 100%; padding: 12px; border: 2px solid var(--primary); border-radius: 8px; margin-bottom: 15px; font-size: 16px; outline: none; }
+        
+        .btn { width: 100%; padding: 15px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
+        .btn-save { background: var(--primary); color: white; margin-top: 10px; }
+        .btn-edit { background: var(--success); color: white; margin-top: 10px; display: none; }
+        .btn-delete { background: var(--danger); color: white; margin-top: 10px; display: none; }
+        
+        .lista-item { display: flex; align-items: center; padding: 12px; border-bottom: 1px solid #eee; cursor: pointer; transition: 0.2s; }
+        .lista-item:hover { background: #f8f9fa; }
+        .lista-item img { width: 50px; height: 50px; border-radius: 8px; object-fit: cover; margin-right: 15px; background: #eee; }
+        
+        #modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #fff; z-index: 100; padding: 20px; box-sizing: border-box; overflow-y: auto; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="tabs">
+        <button class="tab-btn active" id="tabCad" onclick="showTab('cadastro')">NOVO</button>
+        <button class="tab-btn" id="tabLis" onclick="showTab('lista')">LISTA</button>
+        <button class="tab-btn" id="tabBak" onclick="showTab('backup')">BACKUP</button>
+    </div>
+
+    <div id="tela-cadastro" class="card">
+        <form id="formGeral">
+            <input type="hidden" id="edit-id">
+            <label>Criança:</label><input type="text" id="crianca" class="full-width" required>
+            
+            <div class="form-grid">
+                <div><label>Nascimento:</label><input type="date" id="nascimento"></div>
+                <div><label>RG:</label><input type="text" id="rg"></div>
+                <div><label>Sexo:</label>
+                    <select id="sexo">
+                        <option value="Masculino">Masculino</option>
+                        <option value="Feminino">Feminino</option>
+                    </select>
+                </div>
+                <div><label>Roupa:</label><input type="text" id="roupa" placeholder="Ex: Gg"></div>
+                <div><label>Calçado:</label><input type="number" id="calcado" placeholder="40"></div>
+                <div>
+                    <label>Selecionar Líder:</label>
+                    <select id="selectLider" onchange="selecionarNumeroLider(this)">
+                        <option value="">-- Escolha uma Líder --</option>
+                        <option value="11968904319">Karen</option>
+                        <option value="11991635767">Giseli/Karolany</option>
+                        <option value="11991635767">Mika/Cida</option>
+                        <option value="11958011782">Jane</option>
+                        <option value="11992139686">Claudia Rayssa</option>
+                        <option value="11953357567">Priscila</option>
+                        <option value="11932316125">Michelle</option>
+                        <option value="11976733854">Dani</option>
+                        <option value="11967668183">Claudinha</option>
+                        <option value="11958011782">Jane (Rua 8)</option>
+                        <option value="11991992471">Tia Bia</option>
+                        <option value="1199188386">Karine</option>
+                        <option value="11984463530">Kenia</option>
+                        <option value="11971969676">Simone</option>
+                        <option value="11994132060">Giovana</option>
+                        <option value="11984463442">Gilmara</option>
+                    </select>
+                </div>
+                <div class="full-width">
+                    <label>Telefone WhatsApp:</label>
+                    <input type="tel" id="telefone" placeholder="Ex: 11999999999" oninput="validarWhatsApp(this)">
+                    <div id="feedback-zap" class="zap-feedback"></div>
+                </div>
+            </div>
+
+            <label>Responsável:</label><input type="text" id="responsavel">
+            <label>Endereço:</label><input type="text" id="endereco">
+            
+            <label>Bairro:</label>
+            <select id="bairro">
+                <option value="">Selecione o Bairro</option>
+                <option value="Sape de baixo">Sape de baixo</option>
+                <option value="Sape de cima e posto">Sape de cima e posto</option>
+                <option value="Mandioquinha">Mandioquinha</option>
+                <option value="Jd Boa Vista">Jd Boa Vista</option>
+                <option value="Jd São Domingos">Jd São Domingos</option>
+                <option value="Jd Jaqueline">Jd Jaqueline</option>
+                <option value="Jd Joao VIII /Apoador">Jd Joao VIII /Apoador</option>
+                <option value="Jd Guaraú">Jd Guaraú</option>
+                <option value="Jd Esther">Jd Esther</option>
+                <option value="Rua 8">Rua 8</option>
+                <option value="Sem Terra">Sem Terra</option>
+                <option value="Gelo">Gelo</option>
+                <option value="Piamonteses">Piamonteses</option>
+                <option value="Cohab">Cohab</option>
+                <option value="Ponta da praia">Ponta da praia</option>
+                <option value="Predinhos">Predinhos</option>
+            </select>
+            
+            <label>Foto:</label><input type="file" id="foto" accept="image/*" capture="environment">
+            
+            <button type="button" id="btn-gravar" class="btn btn-save" onclick="salvar()">GRAVAR E ENVIAR WHATSAPP</button>
+            <button type="button" id="btn-alterar" class="btn btn-edit" onclick="alterar()">ALTERAR CADASTRO</button>
+            <button type="button" id="btn-excluir" class="btn btn-delete" onclick="excluir()">EXCLUIR CADASTRO</button>
+        </form>
+    </div>
+
+    <div id="tela-lista" style="display:none;">
+        <input type="text" id="inputBusca" class="search-box" placeholder="Filtrar por nome, RG ou bairro..." onkeyup="filtrarLista()">
+        <div id="lista-db" class="card"></div>
+    </div>
+
+    <div id="tela-backup" class="card" style="display:none; text-align:center;">
+        <h3>Centralizar Dados</h3>
+        <button class="btn btn-save" style="background:#fff; color:var(--primary); border:1px solid var(--primary);" onclick="exportarBackup()">GERAR ARQUIVO DE BACKUP</button>
+        <br><br>
+        <input type="file" id="importFile" accept=".json" style="display:none" onchange="importarBackup(this)">
+        <button class="btn btn-save" onclick="document.getElementById('importFile').click()">IMPORTAR PARA ESTE COMPUTADOR</button>
+    </div>
+</div>
+
+<div id="modal">
+    <button class="btn" style="background:#e8f0fe; color:var(--primary); margin-bottom:20px;" onclick="document.getElementById('modal').style.display='none'">← VOLTAR</button>
+    <div id="detalhe-conteudo" style="text-align: center;">
+        <img id="det-img" style="max-width: 100%; border-radius: 12px; margin-bottom:20px;">
+        <h2 id="det-nome"></h2>
+        <div id="det-texto" style="text-align: left; background: #f8f9fa; padding: 15px; border-radius: 8px; line-height: 1.6;"></div>
+        <button class="btn btn-save" style="margin-top:20px;" onclick="prepararEdicaoNoModal()">EDITAR ESTE CADASTRO</button>
+    </div>
+</div>
+
+<script>
+    let db;
+    let todosCadastros = []; 
+    let cadastroAtual;
+
+    function selecionarNumeroLider(select) {
+        const foneInput = document.getElementById('telefone');
+        foneInput.value = select.value;
+        validarWhatsApp(foneInput);
+    }
+
+    function validarWhatsApp(input) {
+        const fone = input.value.replace(/\D/g, '');
+        const feedback = document.getElementById('feedback-zap');
+        
+        if (fone.length === 11 && fone[2] === '9') {
+            input.classList.remove('zap-invalido');
+            input.classList.add('zap-valido');
+            feedback.innerText = "whatsapp valido";
+            feedback.style.color = "var(--success)";
+            feedback.style.display = "block";
+        } else if (fone.length > 0) {
+            input.classList.remove('zap-valido');
+            input.classList.add('zap-invalido');
+            feedback.innerText = "whatsapp não existe";
+            feedback.style.color = "var(--danger)";
+            feedback.style.display = "block";
+        } else {
+            input.classList.remove('zap-valido', 'zap-invalido');
+            feedback.style.display = "none";
+        }
+    }
+
+    const mensagensBairro = {
+        "Sape de baixo": " Atravéz da lider *Karen* seu cadastro foi realizado com sucesso, para concluir entre no grupo de aviso da comunidade Sape de baixo clicando no link abaixo    https://chat.whatsapp.com/L1CTqTmkbTP9zcOblrHnsK?mode=gi_t  ",
+        "Sape de cima e posto": "Atravéz da lider *Giseli/karolany* seu cadastro foi realizado com sucesso, para concluir entre no grupo de aviso da comunidade Sape de cima e posto clicando no link abaixo   https://chat.whatsapp.com/KD0ed31vOgsKhiOHpK3C2v?mode=gi_t",
+        "Mandioquinha": "Atravéz da lider *Mika/Cida* seu cadastro foi realizado com sucesso, para concluir entre no grupo de aviso da comunidade Mandioquinha clicando no link abaixo        https://chat.whatsapp.com/G8oaXNzfjnt75dKjU5xuu4?mode=gi_t ",
+        "Jd Boa Vista": "Atravéz da lider *Jane* seu cadastro foi realizado com sucesso, para concluir entre no grupo de aviso da comunidade Jd Boa Vista clicando no link abaixo     https://chat.whatsapp.com/Kx0qTOd53R71ejZkuHJ76a?mode=gi_t    ",
+        "Jd São Domingos": "Atravéz da lider *Claudia Rayssa* seu cadastro foi realizado com sucesso, para concluir entre no grupo de aviso da comunidade Jd São Domingos clicando no link abaixo      https://chat.whatsapp.com/FmgU0IU5xhRAZKzSufj9cS?mode=gi_t   ",
+        "Jd Jaqueline": "Atravéz da lider *Priscila* seu cadastro foi realizado com sucesso, para concluir entre no grupo de aviso da comunidade Jd Jaqueline clicando no link abaixo       https://chat.whatsapp.com/BTo1YTKykbVEm49vNvAujX?mode=gi_t  ",
+        "Jd Joao VIII /Apoador": "Atravéz da lider *Michelle* seu cadastro foi realizado com sucesso, para concluir entre no grupo de aviso da comunidade Jd Joao VIII /Apoador clicando no link abaixo     https://chat.whatsapp.com/H9W68tyfgLd50WdrLD6hzl?mode=gi_t    ",
+        "Jd Guaraú": "Atravéz da lider *Dani* seu cadastro foi realizado com sucesso, para concluir entre no grupo de aviso da comunidade Jd Guaraú clicando no link abaixo     https://chat.whatsapp.com/GWKISYttbXE4b6HMBAcuUG?mode=gi_t    ",
+        "Jd Esther": "Atravéz da lider *Claudinha* seu cadastro foi realizado com sucesso, para concluir entre no grupo de aviso da comunidade Jd Esther clicando no link abaixo        https://chat.whatsapp.com/EbvJ19E7bPJ4TqEcLGqizM?mode=gi_t ",
+        "Rua 8": "Atravéz da lider *Jane* seu cadastro foi realizado com sucesso, para concluir entre no grupo de aviso da comunidade Rua 8 clicando no link abaixo        https://chat.whatsapp.com/GWqZCZLs4yS99yVosijJzq?mode=gi_t ",
+        "Sem Terra": "Atravéz da lider *Tia Bia * seu cadastro foi realizado com sucesso, para concluir entre no grupo de aviso da comunidade Sem Terra clicando no link abaixo         https://chat.whatsapp.com/HmASaxUGRDZCUY39YLKRlG?mode=gi_t",
+        "Gelo": "Atravéz da lider *Karine* seu cadastro foi realizado com sucesso, para concluir entre no grupo de aviso da comunidade Gelo clicando no link abaixo        https://chat.whatsapp.com/HWltI07ZT5wJbfJaG4m6Xn?mode=gi_t ",
+        "Piamonteses": "Atravéz da lider *kenia * seu cadastro foi realizado com sucesso, para concluir entre no grupo de aviso da comunidade Piamonteses clicando no link abaixo      https://chat.whatsapp.com/IFTgd739XnfA1xXlxObN6e?mode=gi_t   ",
+        "Cohab": "Atravéz da lider *Simone* seu cadastro foi realizado com sucesso, para concluir entre no grupo de aviso da comunidade Cohab clicando no link abaixo       https://chat.whatsapp.com/KcFdzw6o95y31640lkjIhQ?mode=gi_t  ",
+        "Ponta da praia": "Atravéz da lider *Giovana* seu cadastro foi realizado com sucesso, para concluir entre no grupo de aviso da comunidade Ponta da praia clicando no link abaixo       https://chat.whatsapp.com/CNu1hDkOWsEDY6LKbdalZd?mode=gi_t  ",
+        "Predinhos": "Atravéz da lider *Gilmara * seu cadastro foi realizado com sucesso, para concluir entre no grupo de aviso da comunidade Predinhos clicando no link abaixo       https://chat.whatsapp.com/FLybyxVnTN29CVUwr1RZEY?mode=gi_t  "
+    };
+
+    const request = indexedDB.open("ComunidadeDB_V2", 1);
+    request.onupgradeneeded = (e) => {
+        e.target.result.createObjectStore("pessoas", { keyPath: "id", autoIncrement: true });
+    };
+    request.onsuccess = (e) => { 
+        db = e.target.result; 
+        renderLista(); 
+        configurarLimiteIdade();
+    };
+
+    function configurarLimiteIdade() {
+        const hoje = new Date();
+        const dataLimite = new Date(hoje.getFullYear() - 10, hoje.getMonth(), hoje.getDate());
+        const minDate = dataLimite.toISOString().split("T")[0];
+        document.getElementById('nascimento').setAttribute('min', minDate);
+    }
+
+    function showTab(aba) {
+        ['tela-cadastro', 'tela-lista', 'tela-backup'].forEach(t => document.getElementById(t).style.display = 'none');
+        ['tabCad', 'tabLis', 'tabBak'].forEach(t => document.getElementById(t).classList.remove('active'));
+        document.getElementById('tela-' + aba).style.display = 'block';
+        document.getElementById('tab' + aba.charAt(0).toUpperCase() + aba.slice(1,3)).classList.add('active');
+        
+        if(aba === 'cadastro') {
+            document.getElementById('formGeral').reset();
+            document.getElementById('btn-gravar').style.display = 'block';
+            document.getElementById('btn-alterar').style.display = 'none';
+            document.getElementById('btn-excluir').style.display = 'none';
+            document.getElementById('edit-id').value = "";
+            const foneInput = document.getElementById('telefone');
+            foneInput.classList.remove('zap-valido', 'zap-invalido');
+            document.getElementById('feedback-zap').style.display = "none";
+        }
+        
+        if(aba === 'lista') renderLista();
+    }
+
+    async function salvar() {
+        const foto = document.getElementById('foto').files[0];
+        const bairroSel = document.getElementById('bairro').value;
+        const msgBairro = mensagensBairro[bairroSel] || "Cadastro realizado com sucesso.";
+
+        const registro = {
+            crianca: document.getElementById('crianca').value,
+            nascimento: document.getElementById('nascimento').value,
+            rg: document.getElementById('rg').value,
+            sexo: document.getElementById('sexo').value,
+            roupa: document.getElementById('roupa').value,
+            calcado: document.getElementById('calcado').value,
+            responsavel: document.getElementById('responsavel').value,
+            telefone: document.getElementById('telefone').value,
+            endereco: document.getElementById('endereco').value,
+            bairro: bairroSel,
+            foto: foto ? await toBase64(foto) : "",
+            dataCad: new Date().toLocaleString()
+        };
+
+        const tx = db.transaction("pessoas", "readwrite");
+        tx.objectStore("pessoas").add(registro);
+        tx.oncomplete = () => {
+            enviarWhatsApp(registro, msgBairro);
+            alert("Cadastrado e Mensagem Enviada!");
+            document.getElementById('formGeral').reset();
+            showTab('lista');
+        };
+    }
+
+    function enviarWhatsApp(reg, msgBairro) {
+        const fone = reg.telefone.replace(/\D/g, '');
+        if(!fone) return;
+
+        const selectLider = document.getElementById('selectLider');
+        const liderSelecionada = selectLider.options[selectLider.selectedIndex].text;
+        let texto = "";
+
+        if (selectLider.value !== "") {
+            // MENSAGEM PARA LÍDER COM TODOS OS CAMPOS DO FORMULÁRIO
+            texto = `Olá *${liderSelecionada}*, somos a equipe neide da turma do bem, este cadastro esta sem numero whatsapp valido, por favor poderia conferir com a responsavel *${reg.responsavel}*, aguardo seu retorno, obrigado.%0A%0A` +
+                    `*DADOS COMPLETOS DO CADASTRO:*%0A` +
+                    `*Criança:* ${reg.crianca}%0A` +
+                    `*RG:* ${reg.rg}%0A` +
+                    `*Nascimento:* ${reg.nascimento}%0A` +
+                    `*Sexo:* ${reg.sexo}%0A` +
+                    `*Roupa:* ${reg.roupa}%0A` +
+                    `*Calçado:* ${reg.calcado}%0A` +
+                    `*Responsável:* ${reg.responsavel}%0A` +
+                    `*Endereço:* ${reg.endereco}%0A` +
+                    `*Bairro:* ${reg.bairro}`;
+        } else {
+            // MENSAGEM PADRÃO RESPONSÁVEL
+            texto = `*OLÁ, SOMOS A TURMA DO BEM - EQUIPE NEIDE, PASSANDO PARA DIZER QUE SEU CADASTRO FOI REALIZADO*%0A%0A` +
+                    `*Criança:* ${reg.crianca}%0A` +
+                    `*RG:* ${reg.rg}%0A` +
+                    `*Nascimento:* ${reg.nascimento}%0A` +
+                    `*Sexo:* ${reg.sexo}%0A` +
+                    `*Roupa:* ${reg.roupa} | *Sapato:* ${reg.calcado}%0A` +
+                    `*Responsável:* ${reg.responsavel}%0A` +
+                    `*Endereço:* ${reg.endereco}, ${reg.bairro}%0A%0A` +
+                    `*ENTRE NO GRUPO DE WHATSSAPP DA SUA COMUNIDADE:*%0A_${msgBairro}_`;
+        }
+
+        window.open(`https://wa.me/55${fone}?text=${texto}`, '_blank');
+    }
+
+    async function alterar() {
+        const id = parseInt(document.getElementById('edit-id').value);
+        const fotoInput = document.getElementById('foto').files[0];
+        
+        const registro = {
+            id: id,
+            crianca: document.getElementById('crianca').value,
+            nascimento: document.getElementById('nascimento').value,
+            rg: document.getElementById('rg').value,
+            sexo: document.getElementById('sexo').value,
+            roupa: document.getElementById('roupa').value,
+            calcado: document.getElementById('calcado').value,
+            responsavel: document.getElementById('responsavel').value,
+            telefone: document.getElementById('telefone').value,
+            endereco: document.getElementById('endereco').value,
+            bairro: document.getElementById('bairro').value,
+            dataCad: new Date().toLocaleString()
+        };
+
+        if (fotoInput) {
+            registro.foto = await toBase64(fotoInput);
+        } else {
+            registro.foto = cadastroAtual.foto;
+        }
+
+        const tx = db.transaction("pessoas", "readwrite");
+        tx.objectStore("pessoas").put(registro);
+        tx.oncomplete = () => {
+            alert("Cadastro atualizado!");
+            showTab('lista');
+        };
+    }
+
+    function excluir() {
+        if(confirm("Tem certeza que deseja excluir este cadastro?")) {
+            const id = parseInt(document.getElementById('edit-id').value);
+            const tx = db.transaction("pessoas", "readwrite");
+            tx.objectStore("pessoas").delete(id);
+            tx.oncomplete = () => {
+                alert("Cadastro removido!");
+                showTab('lista');
+            };
+        }
+    }
+
+    const toBase64 = f => new Promise(r => {
+        const rd = new FileReader(); rd.onload = () => r(rd.result); rd.readAsDataURL(f);
+    });
+
+    function renderLista() {
+        const store = db.transaction("pessoas").objectStore("pessoas");
+        store.getAll().onsuccess = (e) => {
+            todosCadastros = e.target.result;
+            displayCadastros(todosCadastros);
+        };
+    }
+
+    function displayCadastros(itens) {
+        const cont = document.getElementById('lista-db');
+        cont.innerHTML = "";
+        itens.forEach(d => {
+            const div = document.createElement('div');
+            div.className = 'lista-item';
+            div.onclick = () => abrir(d);
+            div.innerHTML = `<img src="${d.foto || 'https://via.placeholder.com/50'}">
+                <div><b>${d.crianca}</b><br><small>${d.bairro || 'Sem Bairro'} | RG: ${d.rg}</small></div>`;
+            cont.appendChild(div);
+        });
+    }
+
+    function filtrarLista() {
+        const termo = document.getElementById('inputBusca').value.toLowerCase();
+        const filtrados = todosCadastros.filter(p => 
+            p.crianca.toLowerCase().includes(termo) || 
+            p.rg.includes(termo) || 
+            p.bairro.toLowerCase().includes(termo)
+        );
+        displayCadastros(filtrados);
+    }
+
+    function abrir(d) {
+        cadastroAtual = d;
+        document.getElementById('modal').style.display = 'block';
+        document.getElementById('det-img').src = d.foto || 'https://via.placeholder.com/150';
+        document.getElementById('det-nome').innerText = d.crianca;
+        document.getElementById('det-texto').innerHTML = `
+            <b>RG:</b> ${d.rg} | <b>Sexo:</b> ${d.sexo}<br>
+            <b>Nascimento:</b> ${d.nascimento}<br>
+            <b>Roupa:</b> ${d.roupa} | <b>Calçado:</b> ${d.calcado}<br>
+            <b>Responsável:</b> ${d.responsavel}<br>
+            <b>Telefone:</b> ${d.telefone}<br>
+            <b>Endereço:</b> ${d.endereco}<br>
+            <b>Bairro:</b> ${d.bairro}
+        `;
+    }
+
+    function prepararEdicaoNoModal() {
+        const d = cadastroAtual;
+        showTab('cadastro');
+        document.getElementById('modal').style.display = 'none';
+        
+        document.getElementById('edit-id').value = d.id;
+        document.getElementById('crianca').value = d.crianca;
+        document.getElementById('nascimento').value = d.nascimento;
+        document.getElementById('rg').value = d.rg;
+        document.getElementById('sexo').value = d.sexo;
+        document.getElementById('roupa').value = d.roupa;
+        document.getElementById('calcado').value = d.calcado;
+        document.getElementById('responsavel').value = d.responsavel;
+        document.getElementById('telefone').value = d.telefone;
+        document.getElementById('endereco').value = d.endereco;
+        document.getElementById('bairro').value = d.bairro;
+
+        validarWhatsApp(document.getElementById('telefone'));
+
+        document.getElementById('btn-gravar').style.display = 'none';
+        document.getElementById('btn-alterar').style.display = 'block';
+        document.getElementById('btn-excluir').style.display = 'block';
+    }
+
+    function exportarBackup() {
+        db.transaction("pessoas").objectStore("pessoas").getAll().onsuccess = (e) => {
+            const blob = new Blob([JSON.stringify(e.target.result)], {type: "application/json"});
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = `backup_comunidade_${new Date().getTime()}.json`;
+            a.click();
+        };
+    }
+
+    function importarBackup(input) {
+        const reader = new FileReader();
+        reader.onload = () => {
+            const dados = JSON.parse(reader.result);
+            const tx = db.transaction("pessoas", "readwrite");
+            const store = tx.objectStore("pessoas");
+            dados.forEach(i => { delete i.id; store.add(i); });
+            tx.oncomplete = () => { alert("Importado!"); renderLista(); showTab('lista'); };
+        };
+        reader.readAsText(input.files[0]);
+    }
+</script>
+</body>
+</html>
